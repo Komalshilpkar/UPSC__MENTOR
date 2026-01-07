@@ -4,6 +4,9 @@ import os, json, time
 from groq import Groq
 from tavily import TavilyClient
 
+# 🔍 DEBUG (TEMPORARY)
+# st.write("GROQ:", os.getenv("GROQ_API_KEY"))
+
 # ================= LOAD ENV =================
 
 # load_dotenv()
@@ -96,6 +99,7 @@ if not st.session_state.logged_in:
 mode = st.sidebar.radio(
     "Select Section",
     [
+        "🧠 Ask UPSC Syllabus",
         "🧪 Prelims Practice",
         "📘 Mains Practice",
         "📜 Previous Year Papers (PYQs)",
@@ -110,6 +114,54 @@ mode = st.sidebar.radio(
 
     ]
 )
+
+# =====================================================
+# 🧠 ASK UPSC SYLLABUS (AI DEEP EXPLAINER)
+# =====================================================
+if mode == "🧠 Ask UPSC Syllabus":
+
+    st.header("🧠 Ask Anything About UPSC Syllabus")
+    st.caption("Type any topic, paper, or doubt — get deep UPSC-level clarity")
+
+    user_query = st.text_area(
+        "✍️ Ask your question (GS, Prelims, Mains, Optional, Strategy, etc.)",
+        placeholder="Example: Explain GS Paper 2 – Parliament vs Executive with examples and PYQ relevance",
+        height=120
+    )
+
+    if st.button("🔍 Explain in Depth"):
+        if not user_query.strip():
+            st.warning("Please type a question first.")
+            st.stop()
+
+        prompt = f"""
+You are a senior UPSC mentor.
+
+Explain the following query in DEPTH for a UPSC aspirant:
+
+"{user_query}"
+
+STRUCTURE YOUR ANSWER AS:
+1. Concept clarity (simple + deep)
+2. Syllabus linkage (Prelims / Mains / GS Paper)
+3. Important subtopics
+4. Examples (India + current relevance)
+5. Previous Year Question (if applicable)
+6. How to prepare this topic effectively
+
+Use clear headings and bullet points.
+Avoid fluff. Write like topper notes.
+"""
+
+        res = groq.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3
+        )
+
+        st.markdown("### 📘 Detailed Explanation")
+        st.write(res.choices[0].message.content)
+
 
 # =====================================================
 # 🧪 PRELIMS PRACTICE

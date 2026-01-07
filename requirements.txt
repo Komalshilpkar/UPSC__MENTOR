@@ -3,3 +3,4 @@ groq
 tavily-python
 python-dotenv
 fpdf
+reportlab
