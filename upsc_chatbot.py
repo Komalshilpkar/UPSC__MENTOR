@@ -225,6 +225,7 @@ if mode == "📝 Make UPSC Notes":
     #     "📌 Topic / Area",
     #     placeholder="Example: Inflation, Parliament, Ethics case studies"
     # )
+    topic = "UPSC Notes"
 
     voice_text = voice_input("notes_voice")
 
