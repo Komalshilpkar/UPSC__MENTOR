@@ -3,9 +3,34 @@ import os, json, time
 # from dotenv import load_dotenv
 from groq import Groq
 from tavily import TavilyClient
+from fpdf import FPDF
+import reportlab
+from reportlab.platypus import SimpleDocTemplate, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.pagesizes import A4
+from io import BytesIO
+from streamlit_mic_recorder import mic_recorder
+
+def voice_input(key):
+    audio = mic_recorder(
+        start_prompt="🎤 Speak",
+        stop_prompt="⏹ Stop",
+        just_once=True,
+        key=key
+    )
+    if audio and "text" in audio:
+        return audio["text"]
+    return ""
+
+
+
 
 # 🔍 DEBUG (TEMPORARY)
 # st.write("GROQ:", os.getenv("GROQ_API_KEY"))
+
+# st.write("ENV KEY PRESENT:", bool(os.getenv("GROQ_API_KEY")))
+# st.write("KEY VALUE:", os.getenv("GROQ_API_KEY"))
+# st.stop()
 
 # ================= LOAD ENV =================
 
@@ -99,6 +124,8 @@ if not st.session_state.logged_in:
 mode = st.sidebar.radio(
     "Select Section",
     [
+        "💬 Ask Anything (UPSC AI Chat)",
+        "📝 Make UPSC Notes",
         "🧠 Ask UPSC Syllabus",
         "🧪 Prelims Practice",
         "📘 Mains Practice",
@@ -114,6 +141,173 @@ mode = st.sidebar.radio(
 
     ]
 )
+
+
+# =====================================================
+# 💬 ASK ANYTHING – UPSC AI CHAT (UNIVERSAL)
+# =====================================================
+if mode == "💬 Ask Anything (UPSC AI Chat)":
+
+    st.header("💬 Ask Anything – UPSC AI Mentor")
+    st.caption(
+        "Ask any doubt, topic, strategy, or concept.\n"
+        "This works like ChatGPT but answers ONLY in UPSC-focused depth."
+    )
+
+    # user_query = st.text_area(
+    #     "✍️ Ask your question",
+    #     placeholder=(
+    #         "Examples:\n"
+    #         "- Explain inflation for Prelims + Mains\n"
+    #         "- How to prepare GS Paper 2 effectively?\n"
+    #         "- Difference between FRs and DPSPs with cases\n"
+    #         "- Ethics case study approach\n"
+    #         "- Best strategy for first attempt UPSC aspirant"
+    #     ),
+    #     height=180
+    # )
+     
+    
+    voice_text = voice_input("chat_voice")
+
+    user_query = st.text_area(
+          "✍️ Ask your question",
+           value=voice_text,
+           height=180
+)
+
+
+    if st.button("🚀 Get Detailed Answer"):
+        if not user_query.strip():
+            st.warning("Please enter a question.")
+            st.stop()
+
+        prompt = f"""
+You are a senior UPSC mentor and topper.
+
+Answer the following query in a VERY DETAILED and STRUCTURED manner:
+
+"{user_query}"
+
+Your answer MUST include:
+1. Concept explanation (simple → advanced)
+2. UPSC syllabus linkage (Prelims / Mains / GS Paper)
+3. Important subtopics
+4. Examples (India + current relevance)
+5. Previous Year Questions (if applicable)
+6. Answer writing / preparation tips
+
+Write like UPSC topper notes.
+Use headings and bullet points.
+Avoid unnecessary fluff.
+"""
+
+        with st.spinner("Thinking like a UPSC mentor..."):
+            res = groq.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3
+            )
+
+        st.markdown("## 📘 Detailed UPSC Answer")
+        st.write(res.choices[0].message.content)
+
+
+# =====================================================
+# 📝 MAKE UPSC NOTES (ASK → NOTES → DOWNLOAD)
+# =====================================================
+if mode == "📝 Make UPSC Notes":
+
+    st.header("📝 AI UPSC Notes Maker")
+    st.caption("Ask anything → Get deep UPSC notes → Download")
+
+    # topic = st.text_input(
+    #     "📌 Topic / Area",
+    #     placeholder="Example: Inflation, Parliament, Ethics case studies"
+    # )
+
+    voice_text = voice_input("notes_voice")
+
+    user_query = st.text_area(
+         "✍️ What exactly do you want to know?",
+         value=voice_text,
+         height=160
+)
+
+
+    # user_query = st.text_area(
+    #     "✍️ What exactly do you want to know?",
+    #     placeholder=(
+    #         "Example:\n"
+    #         "Explain inflation for Prelims + Mains.\n"
+    #         "Include causes, types, PYQs and answer-writing tips."
+    #     ),
+    #     height=160
+    # )
+
+    voice_text = voice_input("chat_voice")
+
+    user_query = st.text_area(
+         "✍️ Ask your question",
+         value=voice_text,
+         height=180
+)
+
+
+    if st.button("📚 Generate UPSC Notes"):
+        if not topic or not user_query.strip():
+            st.warning("Please enter topic and your question.")
+            st.stop()
+
+        prompt = f"""
+You are a senior UPSC mentor.
+
+Create HIGH-QUALITY UPSC NOTES on:
+
+Topic: {topic}
+Student Requirement: {user_query}
+
+FORMAT STRICTLY AS UPSC NOTES:
+- Clear headings
+- Bullet points
+- Simple + deep explanation
+- Prelims facts
+- Mains-ready analysis
+- Examples (India + current relevance)
+- PYQ reference (if applicable)
+- Answer writing tips
+
+Make notes revision-friendly.
+Avoid unnecessary fluff.
+"""
+
+        with st.spinner("Creating topper-level notes..."):
+            res = groq.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3
+            )
+
+        notes_text = res.choices[0].message.content
+
+        # Save in session
+        st.session_state.generated_notes = notes_text
+        st.session_state.notes_topic = topic
+
+        st.markdown("## 📘 Generated UPSC Notes")
+        st.write(notes_text)
+
+    # ================= DOWNLOAD NOTES =================
+    if "generated_notes" in st.session_state:
+        st.markdown("---")
+
+        st.download_button(
+            label="⬇️ Download Notes (TXT)",
+            data=st.session_state.generated_notes,
+            file_name=f"{st.session_state.notes_topic.replace(' ', '_')}_UPSC_Notes.txt",
+            mime="text/plain"
+        )
+
 
 # =====================================================
 # 🧠 ASK UPSC SYLLABUS (AI DEEP EXPLAINER)
@@ -611,52 +805,73 @@ Topic focus: {topic if topic else "Full syllabus"}
         st.write(res.choices[0].message.content)
 
 
-
 # =====================================================
-# 📰 DAILY NEWS (WITH NEWSPAPER SELECTION)
+# 📰 DAILY NEWS (WITH DATE + NEWSPAPER + DEEP DIVE)
 # =====================================================
 if mode == "📰 Daily News":
 
+    from datetime import date
+
     st.subheader("📰 Daily UPSC News & Editorial Analysis")
 
+    # 📅 Date selector
+    news_date = st.date_input(
+        "Select Date",
+        value=date.today()
+    )
+
+    # 🗞️ Newspaper selector
     newspaper = st.selectbox(
         "Select Newspaper / Source",
         ["The Hindu", "Indian Express", "PIB", "All"]
     )
 
-    if newspaper == "The Hindu":
-        query = "site:thehindu.com UPSC relevant editorials India"
-    elif newspaper == "Indian Express":
-        query = "site:indianexpress.com UPSC relevant editorials India"
-    elif newspaper == "PIB":
-        query = "site:pib.gov.in important government releases UPSC"
-    else:
-        query = "Important UPSC current affairs India editorials"
+    # ✅ Show selected info clearly
+    st.markdown(
+        f"### 🗞️ Source: **{newspaper}** | 📅 Date: **{news_date.strftime('%d %B %Y')}**"
+    )
 
+    # 🔎 Search query
+    if newspaper == "The Hindu":
+        query = f"site:thehindu.com UPSC editorials {news_date}"
+    elif newspaper == "Indian Express":
+        query = f"site:indianexpress.com UPSC editorials {news_date}"
+    elif newspaper == "PIB":
+        query = f"site:pib.gov.in government releases {news_date}"
+    else:
+        query = f"UPSC current affairs India {news_date}"
+
+    # 🌐 Fetch news
     web = ""
     if TAVILY_ENABLED:
         try:
-            r = tavily.search(query=query, max_results=5)
+            r = tavily.search(query=query, max_results=15)
             web = "\n".join(i["content"] for i in r["results"])
         except:
             web = ""
 
+    # 🧠 MAIN DAILY NEWS PROMPT
     prompt = f"""
-You are a UPSC mentor.
+You are a SENIOR UPSC FACULTY preparing DAILY CURRENT AFFAIRS NOTES
+for serious CSE aspirants.
 
-Provide DAILY UPSC-RELEVANT NEWS & EDITORIAL ANALYSIS
-based on the source: {newspaper}.
+SOURCE: {newspaper}
+DATE: {news_date.strftime('%d %B %Y')}
 
-Include:
-- Background
-- Why in news
-- GS paper linkage
-- Key data / facts
-- Way forward
+You MUST prepare **10–15 DISTINCT UPSC-RELEVANT TOPICS**.
 
-Write like a topper’s notes.
+For EACH topic include:
+• Why in News  
+• Background / Context  
+• GS Paper & Syllabus Linkage  
+• Key Facts / Data  
+• Mains Perspective (Issues + Way Forward)  
+• Prelims Pointers  
 
-Content:
+Write detailed topper-style notes.
+Bullet points only.
+
+CONTENT SOURCE:
 {web}
 """
 
@@ -666,7 +881,57 @@ Content:
         temperature=0.3
     )
 
-    st.write(res.choices[0].message.content)
+    daily_notes = res.choices[0].message.content
+    st.markdown("## 📘 Daily UPSC Current Affairs Notes")
+    st.write(daily_notes)
+
+    # =====================================================
+    # 🔍 DEEP DIVE INTO A PARTICULAR TOPIC
+    # =====================================================
+    st.markdown("---")
+    st.subheader("🔍 Deep Dive into a Particular Topic")
+
+    deep_topic = st.text_input(
+        "Enter topic name exactly as shown above",
+        placeholder="Example: Supreme Court on Electoral Bonds"
+    )
+
+    if st.button("📖 Explain This Topic in Depth"):
+        if not deep_topic.strip():
+            st.warning("Please enter a topic name.")
+            st.stop()
+
+        deep_prompt = f"""
+You are a senior UPSC mentor.
+
+SOURCE: {newspaper}
+DATE: {news_date.strftime('%d %B %Y')}
+TOPIC: {deep_topic}
+
+Explain this topic in FULL UPSC DEPTH with:
+1. Background & context
+2. Constitutional / legal / economic dimensions
+3. Current relevance
+4. GS Paper & syllabus mapping
+5. Previous Year Questions
+6. Mains answer framework
+7. Prelims facts
+8. Way forward
+
+Write like topper notes.
+Use headings & bullet points.
+"""
+
+        deep_res = groq.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{"role": "user", "content": deep_prompt}],
+            temperature=0.3
+        )
+
+        st.markdown("### 📚 Detailed Topic Analysis")
+        st.write(deep_res.choices[0].message.content)
+
+
 
 
 # =====================================================
@@ -735,75 +1000,77 @@ if mode == "🎤 Interview":
 # =====================================================
 # 📊 DASHBOARD (CORRECTED & READABLE)
 # =====================================================
-if st.session_state.plan == "PREMIUM":
-    st.subheader("📈 Advanced Analytics (Premium)")
-    st.write("• Accuracy trends\n• Weak topic analysis\n• Improvement tracking")
-else:
-    st.info("Upgrade to Premium to unlock advanced analytics")
+# if st.session_state.plan == "PREMIUM":
+#     st.subheader("📈 Advanced Analytics (Premium)")
+#     st.write("• Accuracy trends\n• Weak topic analysis\n• Improvement tracking")
+# else:
+#     st.info("Upgrade to Premium to unlock advanced analytics")
+
 
 if mode == "📊 Dashboard":
-    # if st.session_state.plan != "PREMIUM":
-    #     st.warning("🔒 PYQ Practice with evaluation is a Premium feature.")
-    #     st.stop()
 
+    st.header("📊 My UPSC Practice Dashboard")
 
-    st.subheader("📊 My UPSC Practice Dashboard")
-
-    # Load history
+    # Load history ONLY here
     with open(HISTORY_FILE) as f:
         data = json.load(f)
 
     user_data = data.get(st.session_state.user, [])
 
     if not user_data:
-        st.info("No practice data available yet.")
+        st.info("No activity yet. Start practicing!")
         st.stop()
 
-    # ---------- SUMMARY ----------
-    total_attempts = len(user_data)
+    # ---------------- SUMMARY ----------------
     prelims_attempts = [d for d in user_data if d.get("type") == "prelims"]
+    notes_data = [d for d in user_data if d.get("type") == "notes"]
 
     col1, col2 = st.columns(2)
-    with col1:
-        st.metric("Total Practice Sessions", total_attempts)
-    with col2:
-        st.metric("Prelims Tests Taken", len(prelims_attempts))
+    col1.metric("Prelims Tests Taken", len(prelims_attempts))
+    col2.metric("Saved UPSC Notes", len(notes_data))
 
     st.markdown("---")
 
-    # ---------- PRELIMS PERFORMANCE ----------
+    # ---------------- SAVED UPSC NOTES ----------------
+    st.subheader("📝 My Saved UPSC Notes")
+
+    if not notes_data:
+        st.info("No notes created yet.")
+    else:
+        for i, note in enumerate(notes_data[::-1], 1):
+            with st.expander(f"{i}. 📘 {note.get('topic', 'UPSC Notes')}"):
+                st.write(note["content"])
+
+    st.markdown("---")
+
+    # ---------------- PRELIMS PERFORMANCE ----------------
     if prelims_attempts:
-        st.subheader("🧪 Prelims Performance")
+        st.subheader("🧪 Recent Prelims Practice")
 
-        scores = [d["score"] for d in prelims_attempts]
-        avg_score = round(sum(scores) / len(scores), 2)
-
-        st.metric("Average Prelims Score", avg_score)
-
-        st.markdown("Recent Prelims Attempts:")
-        for d in prelims_attempts[-5:][::-1]:
-            st.write(f"• **Topic:** {d['topic']} | **Score:** {round(d['score'],2)}")
-
-        st.markdown("---")
-
-    # ---------- TOPIC-WISE ANALYSIS ----------
-    st.subheader("📘 Topic-wise Practice")
-
-    topic_map = {}
-    for d in user_data:
-        topic = d.get("topic")
-        if topic:
-            topic_map[topic] = topic_map.get(topic, 0) + 1
-
-    for topic, count in sorted(topic_map.items(), key=lambda x: x[1], reverse=True):
-        st.write(f"🔹 **{topic}** → {count} session(s)")
+        for p in prelims_attempts[-5:][::-1]:
+            st.write(
+                f"• **{p['topic']}** | Score: {round(p['score'], 2)}"
+            )
 
     st.markdown("---")
 
-    # ---------- RAW HISTORY (OPTIONAL VIEW) ----------
-    with st.expander("📋 View Full Practice History"):
+    # ---------------- FULL ACTIVITY LOG ----------------
+    with st.expander("📋 View Full Activity History"):
         for i, d in enumerate(user_data, start=1):
             st.write(f"{i}. {d}")
+
+
+
+# st.subheader("📝 My Saved UPSC Notes")
+
+# notes_data = [d for d in user_data if d.get("type") == "notes"]
+
+# if not notes_data:
+#     st.info("No notes created yet.")
+# else:
+#     for n in notes_data[::-1][:5]:
+#         with st.expander(f"📘 {n['topic']} ({n['paper']})"):
+#             st.write(n["content"])
 
 # =====================================================
 # 📚 UPSC SYLLABUS (COMPLETE – PRELIMS + MAINS + OPTIONAL)
