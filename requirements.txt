@@ -4,3 +4,5 @@ tavily-python
 python-dotenv
 fpdf
 reportlab
+streamlit-mic-recorder
+
