@@ -1,25 +1,26 @@
 # 🏛️ AI UPSC Mentor  
-### Complete UPSC Preparation Platform (Powered by AI)
+## Complete UPSC Preparation Platform (Powered by AI)
 
 AI UPSC Mentor is an **all-in-one Streamlit web application** designed to help UPSC aspirants prepare for **Prelims, Mains, Interview, Current Affairs, PYQs, and Full-Length Mocks** using AI.
 
 ---
-##Live Link:  https://upscmentor-jonkhy5ljssiqemrjnruwn.streamlit.app/
+## Live Link:  
+https://upscmentor-jonkhy5ljssiqemrjnruwn.streamlit.app/
 
 ## 🚀 Features
 
-### 🧪 Prelims Practice
+## 🧪 Prelims Practice
 - Generate **UPSC-level MCQs** on any topic
 - Automatic scoring with explanation
 - Negative marking as per UPSC pattern
 
-### 📘 Mains Practice
+## 📘 Mains Practice
 - Get **model GS answers** with:
   - Introduction
   - Body (analysis + examples)
   - Conclusion (way forward)
 
-### 📜 Previous Year Question Papers (PYQs)
+## 📜 Previous Year Question Papers (PYQs)
 - Prelims:
   - GS Paper I
   - CSAT Paper II
@@ -28,12 +29,12 @@ AI UPSC Mentor is an **all-in-one Streamlit web application** designed to help U
   - Essay
 - Full paper generation + answer keys
 
-### 📚 GS Full-Length Mock Tests
+## 📚 GS Full-Length Mock Tests
 - GS-1, GS-2, GS-3, GS-4
 - Prelims & Mains format
 - Ethics (GS-4) case studies supported
 
-### 📰 Daily News Analysis
+## 📰 Daily News Analysis
 - Newspaper selection:
   - The Hindu
   - Indian Express
@@ -43,21 +44,21 @@ AI UPSC Mentor is an **all-in-one Streamlit web application** designed to help U
   - GS linkage
   - Way forward
 
-### 🗓️ Monthly Current Affairs
+## 🗓️ Monthly Current Affairs
 - Month + Year selection
 - GS-wise structured notes
 - Mains & Prelims ready
 
-### 🎤 Interview Preparation
+## 🎤 Interview Preparation
 - AI-generated interview questions
 - Follow-ups based on background
 
-### 📊 Dashboard
+## 📊 Dashboard
 - Practice history
 - Score tracking
 - Topic-wise analysis
 
-### 📚 Complete UPSC Syllabus
+## 📚 Complete UPSC Syllabus
 - Prelims (GS + CSAT)
 - Mains GS-1 to GS-4
 - Essay
